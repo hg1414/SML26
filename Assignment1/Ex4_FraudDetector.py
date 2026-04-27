@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import roc_curve, roc_auc_score
+import matplotlib.pyplot as plt
 
 X, y = make_classification(
     n_samples=2000, n_features=10, n_informative=5,
@@ -10,7 +12,7 @@ X, y = make_classification(
     weights=[0.95, 0.05], flip_y=0.02, random_state=42
 )
 
-#Splitting
+#splitting
 X_train, X_test, y_train, y_test = train_test_split(
     X, y,
     test_size=0.3,
@@ -21,7 +23,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 print("Train size:", len(X_train))
 print("Test size:", len(X_test))
 
-#Standard model
+#standard model
 model = LogisticRegression()
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
@@ -37,4 +39,31 @@ model_balanced.fit(X_train, y_train)
 y_pred_balanced = model_balanced.predict(X_test)
 print(confusion_matrix(y_test, y_pred_balanced))
 print(accuracy_score(y_test, y_pred_balanced))
+
+#scores/probs fraud
+y_score = model.predict_proba(X_test)[:, 1]
+y_score_balanced = model_balanced.predict_proba(X_test)[:, 1]
+
+#ROC-curve
+fpr, tpr, thresholds = roc_curve(y_test, y_score)
+fpr_balanced, tpr_balanced, thresholds_balanced = roc_curve(y_test, y_score_balanced)
+
+#AUC
+auc = roc_auc_score(y_test, y_score)
+auc_balanced = roc_auc_score(y_test, y_score_balanced)
+
+print("AUC standard model:", auc)
+print("AUC balanced model:", auc_balanced)
+
+#plot
+plt.figure()
+plt.plot(fpr, tpr, label=f"Standard model, AUC = {auc:.3f}")
+plt.plot(fpr_balanced, tpr_balanced, label=f"Balanced model, AUC = {auc_balanced:.3f}")
+plt.plot([0, 1], [0, 1], linestyle="--", label="Random baseline")
+
+plt.xlabel("FP Rate")
+plt.ylabel("TP Rate / Recall")
+plt.title("ROC Curve")
+plt.legend()
+plt.show()
 
